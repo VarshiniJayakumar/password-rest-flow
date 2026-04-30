@@ -16,7 +16,7 @@ const ResetPassword = () => {
         const verifyToken = async () => {
             try {
                 // We'll add a simple verify route or just use the reset route with no password
-                await axios.get(`http://localhost:5000/api/auth/verify-token/${token}`);
+                await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/verify-token/${token}`);
                 setIsValid(true);
             } catch (error) {
                 toast.error('Invalid or expired reset link');
@@ -36,7 +36,7 @@ const ResetPassword = () => {
 
         setLoading(true);
         try {
-            const response = await axios.post(`http://localhost:5000/api/auth/reset-password/${token}`, { password });
+            const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/reset-password/${token}`, { password });
             toast.success(response.data.message);
             navigate('/login');
         } catch (error) {

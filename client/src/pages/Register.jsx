@@ -13,7 +13,7 @@ const Register = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/register', { email, password });
+            const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/register`, { email, password });
             toast.success(response.data.message);
             navigate('/login');
         } catch (error) {
