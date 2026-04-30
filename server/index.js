@@ -22,6 +22,10 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 
+app.get('/', (req, res) => {
+    res.send('Password Reset API is running...');
+});
+
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Connected to MongoDB'))
