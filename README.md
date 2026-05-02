@@ -34,12 +34,12 @@ cd password-reset
    ```env
    PORT=5000
    MONGO_URI=mongodb://localhost:27017/password-reset
-   EMAIL_USER=your-email@gmail.com
-   EMAIL_PASS=your-app-password
+   EMAIL_USER=your-verified-brevo-sender@email.com
+   BREVO_API_KEY=your_brevo_api_key_here
    CLIENT_URL=http://localhost:5173
    JWT_SECRET=your_jwt_secret_key
    ```
-   > **Note**: For `EMAIL_PASS`, use a Gmail App Password if using Gmail.
+   > **Note**: For `BREVO_API_KEY`, generate an API key from your Brevo account (SMTP & API settings). Ensure `EMAIL_USER` is a verified sender in Brevo.
 4. Start the server:
    ```bash
    node index.js

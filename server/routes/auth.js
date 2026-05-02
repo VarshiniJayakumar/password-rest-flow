@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const nodemailer = require('nodemailer');
+const Brevo = require('@getbrevo/brevo');
 const User = require('../models/User');
 
 // Register (for testing)
@@ -62,33 +62,28 @@ router.post('/forgot-password', async (req, res) => {
         user.resetTokenExpiry = resetTokenExpiry;
         await user.save();
 
-        // Send Email
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS
-            }
-        });
-
+        // Send Email using Brevo
         const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+        
+        const apiInstance = new Brevo.TransactionalEmailsApi();
+        const apiKey = apiInstance.authentications['apiKey'];
+        apiKey.apiKey = process.env.BREVO_API_KEY;
 
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: user.email,
-            subject: 'Password Reset Request',
-            html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Password Reset</h2>
-                    <p>You requested a password reset. Click the button below to reset your password:</p>
-                    <a href="${resetLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
-                    <p>This link will expire in 1 hour.</p>
-                    <p>If you did not request this, please ignore this email.</p>
-                </div>
-            `
-        };
+        const sendSmtpEmail = new Brevo.SendSmtpEmail();
+        sendSmtpEmail.subject = 'Password Reset Request';
+        sendSmtpEmail.htmlContent = `
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <h2>Password Reset</h2>
+                <p>You requested a password reset. Click the button below to reset your password:</p>
+                <a href="${resetLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
+                <p>This link will expire in 1 hour.</p>
+                <p>If you did not request this, please ignore this email.</p>
+            </div>
+        `;
+        sendSmtpEmail.sender = { email: process.env.EMAIL_USER, name: 'Password Reset Service' };
+        sendSmtpEmail.to = [{ email: user.email }];
 
-        await transporter.sendMail(mailOptions);
+        await apiInstance.sendTransacEmail(sendSmtpEmail);
         res.json({ message: 'Password reset link sent to your email' });
 
     } catch (error) {
