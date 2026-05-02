@@ -61,28 +61,37 @@ router.post('/forgot-password', async (req, res) => {
         user.resetTokenExpiry = resetTokenExpiry;
         await user.save();
 
-        // Send Email using Brevo
-        const { TransactionalEmailsApi, SendSmtpEmail, TransactionalEmailsApiApiKeys } = require('@getbrevo/brevo');
+        // Send Email using Brevo REST API
         const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
         
-        const apiInstance = new TransactionalEmailsApi();
-        apiInstance.setApiKey(TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: {
+                'accept': 'application/json',
+                'api-key': process.env.BREVO_API_KEY,
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+                sender: { email: process.env.EMAIL_USER, name: 'Password Reset Service' },
+                to: [{ email: user.email }],
+                subject: 'Password Reset Request',
+                htmlContent: `
+                    <div style="font-family: Arial, sans-serif; padding: 20px;">
+                        <h2>Password Reset</h2>
+                        <p>You requested a password reset. Click the button below to reset your password:</p>
+                        <a href="${resetLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
+                        <p>This link will expire in 1 hour.</p>
+                        <p>If you did not request this, please ignore this email.</p>
+                    </div>
+                `
+            })
+        });
 
-        const sendSmtpEmail = new SendSmtpEmail();
-        sendSmtpEmail.subject = 'Password Reset Request';
-        sendSmtpEmail.htmlContent = `
-            <div style="font-family: Arial, sans-serif; padding: 20px;">
-                <h2>Password Reset</h2>
-                <p>You requested a password reset. Click the button below to reset your password:</p>
-                <a href="${resetLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
-                <p>This link will expire in 1 hour.</p>
-                <p>If you did not request this, please ignore this email.</p>
-            </div>
-        `;
-        sendSmtpEmail.sender = { email: process.env.EMAIL_USER, name: 'Password Reset Service' };
-        sendSmtpEmail.to = [{ email: user.email }];
-
-        await apiInstance.sendTransacEmail(sendSmtpEmail);
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Brevo API Error:', errorData);
+            throw new Error('Failed to send email');
+        }
         res.json({ message: 'Password reset link sent to your email' });
 
     } catch (error) {
