@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const Brevo = require('@getbrevo/brevo');
 const User = require('../models/User');
 
 // Register (for testing)
@@ -63,13 +62,13 @@ router.post('/forgot-password', async (req, res) => {
         await user.save();
 
         // Send Email using Brevo
+        const { TransactionalEmailsApi, SendSmtpEmail, TransactionalEmailsApiApiKeys } = require('@getbrevo/brevo');
         const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
         
-        const apiInstance = new Brevo.TransactionalEmailsApi();
-        const apiKey = apiInstance.authentications['apiKey'];
-        apiKey.apiKey = process.env.BREVO_API_KEY;
+        const apiInstance = new TransactionalEmailsApi();
+        apiInstance.setApiKey(TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
 
-        const sendSmtpEmail = new Brevo.SendSmtpEmail();
+        const sendSmtpEmail = new SendSmtpEmail();
         sendSmtpEmail.subject = 'Password Reset Request';
         sendSmtpEmail.htmlContent = `
             <div style="font-family: Arial, sans-serif; padding: 20px;">
